@@ -1,22 +1,16 @@
 package ui;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.remote.tracing.Status;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import org.testng.internal.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -28,53 +22,56 @@ import static org.testng.Assert.assertEquals;
 public class SeleniumTest {
 
     WebDriver driver;
-
+    Properties properties;
 
     @BeforeTest //Runs the test before all the Test that has been defined
-    public void loginToApplication(){
-        System.out.println("Login into the Application");
+    public String loginToApplication() throws IOException {
+        Utility utility = new Utility();
+        properties = utility.getProperties();
+        final String password = properties.getProperty("password");
+        byte[] decodedArr = Base64.getDecoder().decode(password);
+        String decodedText = new String(decodedArr, "UTF-8");
+        return decodedText;
     }
-    @AfterTest //Runs the test after all the Test that has been defined
-    public void logoutFromApplication(){
-        System.out.println("logout from the application");
-    }
-    @BeforeMethod // Runs the method before every test
-    public void launchBrowser() throws IOException {
-        Properties properties = new Properties();
-        FileInputStream fileInputStream = new FileInputStream("target/generated-test-sources/test-annotations/testdata.properties");
-        properties.load(fileInputStream);
-        String browser = properties.getProperty("browser");
 
-        if (browser.equals("firefox")) {
-            WebDriverManager.firefoxdriver().setup();
-            driver = new FirefoxDriver();
-        } else if (browser.equals("chrome")) {
-            WebDriverManager.chromedriver().setup();
-            driver = new ChromeDriver();
-        }
+    @BeforeMethod // Runs the method before every test and launches the browser
+    public void launchBrowser() throws IOException {
+            Utility utility = new Utility();
+            driver = utility.launchBrowser();
+//            driver.manage().window().fullscreen();
+//        Properties properties = new Properties();
+//        FileInputStream fileInputStream = new FileInputStream("target/generated-test-sources/test-annotations/testdata.properties");
+//        properties.load(fileInputStream);
+//        String browser = properties.getProperty("browser");
+//
+//        if (browser.equals("firefox")) {
+//            WebDriverManager.firefoxdriver().setup();
+//            driver = new FirefoxDriver();
+//        } else if (browser.equals("chrome")) {
+//            WebDriverManager.chromedriver().setup();
+//            driver = new ChromeDriver();
+//        }
     }
     public void getScreenShot(String fileName) throws IOException{
         DateFormat dateFormat = new SimpleDateFormat("dd-mm-yyyy h-m-s");
         Date date = new Date();
         File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
-        FileUtils.copyFile(scrFile, new File("/Users/bhavinbhatia/BB_Documents/Projects/selenium/intelij-selenium" +
-                "/Selenium-Northeastern-Project/screenshots/"+fileName+"-"+dateFormat.format(date)+".png"));
+        FileUtils.copyFile(scrFile, new File("/Users/bhavinbhatia/BB_Documents/Projects/selenium/intelij-selenium/" +
+                "Selenium_Project/Selenium-Northeastern-Project/screenshots/"+fileName+"-"+dateFormat.format(date)+".png"));
     }
 
     @Test(priority = 1, description = "Scenario 1: Add options in “My Favorites” and verify if it works or not ")
     public void scenarioOne() throws IOException, InterruptedException {
-        System.out.println("Test One");
-        Properties properties = new Properties();
-        FileInputStream fileInputStream = new FileInputStream("target/generated-test-sources/test-annotations/testdata.properties");
-        properties.load(fileInputStream);
-
+        System.out.println("Scenario 1: Add options in “My Favorites” and verify if it works or not ");
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10000));
 
         //Open NEU Portal on Chrome
         driver.get("https://me.northeastern.edu/");
+        driver.manage().window().maximize();
 
         //login to Northeastern
-        WebElement buttonElement = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[2]/div[2]/div[1]/div[2]/div/form/div[1]/div[2]/div\t")));
+        WebElement buttonElement = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/" +
+                "div[2]/div[2]/div[1]/div[2]/div/form/div[1]/div[2]/div\t")));
         buttonElement.click();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5000));
 
@@ -86,7 +83,8 @@ public class SeleniumTest {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5000));
 
         //Enter the login credentials (password)
-        driver.findElement(By.id("password")).sendKeys(properties.getProperty("password"));
+        String password = loginToApplication();
+        driver.findElement(By.id("password")).sendKeys(password);
         Thread.sleep(1000);
 
         //click on login button
@@ -94,7 +92,8 @@ public class SeleniumTest {
         Thread.sleep(5000);
 
         //Click on Yes
-        driver.findElement(By.xpath("/html/body/div/form/div/div/div[2]/div[1]/div/div/div/div/div/div[3]/div/div[2]/div/div[3]/div[2]/div/div/div[2]/input")).click();
+        driver.findElement(By.xpath("/html/body/div/form/div/div/div[2]/div[1]/div/div/div/div/div/div[3]/" +
+                "div/div[2]/div/div[3]/div[2]/div/div/div[2]/input")).click();
         Thread.sleep(3000);
 
         //click on Lets Go
@@ -105,33 +104,41 @@ public class SeleniumTest {
         getScreenShot("Scenario1/After Login");
 
         // Click on resources
-        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div[3]/div/div/div/span[4]/a")).click();
+        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div[3]/div/" +
+                "div/div/span[4]/a")).click();
         Thread.sleep(2000);
 
         //Click on Academic Classes & Registration
-        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[1]/div[2]/div/div[1]/div/p")).click();
+        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/" +
+                "div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[1]/div[2]/div/div[1]/div/p")).click();
         Thread.sleep(2000);
 
         //add to favourites Course Description
-        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div/div[1]/div/div[10]/div/i")).click();
+        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/" +
+                "div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div/div[1]/div/div[10]/div/i")).click();
         Thread.sleep(2000);
 
         //add to favourites My Transcripts
-        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div/div[1]/div/div[21]/div/i")).click();
+        driver.findElement(By.xpath("/html/body/div/div[2]/div[2]/div[2]/div[3]/section/article/div[1]/div/" +
+                "div/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[2]/div/div/div[1]/div/div[21]/div/i")).click();
         Thread.sleep(2000);
 
         //After adding to fav
         getScreenShot("Scenario1/After Fav");
+        driver.close();
+        driver.quit();
 
     }
 
     @Test(priority = 2, description = "Scenario 2: Delete the option from “My Favorites” ")
     public void scenarioTwo() throws IOException, InterruptedException {
         System.out.println("Test Two");
+        driver.manage().window().maximize();
 
-        Properties properties = new Properties();
-        FileInputStream fileInputStream = new FileInputStream("target/generated-test-sources/test-annotations/testdata.properties");
-        properties.load(fileInputStream);
+
+//        Properties properties = new Properties();
+//        FileInputStream fileInputStream = new FileInputStream("target/generated-test-sources/test-annotations/testdata.properties");
+//        properties.load(fileInputStream);
 
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30000));
@@ -153,7 +160,8 @@ public class SeleniumTest {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2000));
 
         //Enter the login credentials (password)
-        driver.findElement(By.id("password")).sendKeys(properties.getProperty("password"));
+        String password = loginToApplication();
+        driver.findElement(By.id("password")).sendKeys(password);
         Thread.sleep(1000);
 
         //click on login button
@@ -195,10 +203,7 @@ public class SeleniumTest {
     @Test (priority = 3, description = "Scenario 3: Browse classes for the Spring 2023 Semester ")
     public void scenarioThree() throws InterruptedException, IOException {
         System.out.println("three");
-        Properties properties = new Properties();
-        FileInputStream fileInputStream = new FileInputStream("/Users/bhavinbhatia/BB_Documents/Projects/selenium" +
-                "/intelij-selenium/untitled/target/generated-test-sources/test-annotations/testdata.properties");
-        properties.load(fileInputStream);
+        driver.manage().window().maximize();
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30000));
         driver.get("https://about.me.northeastern.edu/home/");
@@ -209,14 +214,12 @@ public class SeleniumTest {
         loginButton.click();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2000));
 
-
-
         //Login Screen
         driver.findElement(By.xpath("//*[@id=\"bySelection\"]/div[2]/div/span")).click();
         driver.findElement(By.id("username")).sendKeys(properties.getProperty("username"));
-        driver.findElement(By.id("password")).sendKeys(properties.getProperty("password"));
+        String password = loginToApplication();
+        driver.findElement(By.id("password")).sendKeys(password);
         driver.findElement(By.xpath("/html/body/section/div/div[1]/div/form/div[3]/button")).click();
-
 
         //Click on Yes
         driver.findElement(By.xpath("/html/body/div/form/div/div/div[2]/div[1]/div/div/div/div/div/div[3]/div/div[2]/div/div[3]/div[2]/div/div/div[2]/input")).click();
@@ -234,7 +237,6 @@ public class SeleniumTest {
         driver.findElement(By.xpath("//*[@id=\"7b3083e7-1956-4f64-968b-920d938ba636\"]/div/div/div/div[2]" +
                 "/div/div/div[1]/div/div[11]/div/div/a")).click();
 
-
         //Handeling Multiple windows
         Set<String> windowHandles = driver.getWindowHandles();
         Iterator<String> iterator = windowHandles.iterator();
@@ -246,7 +248,6 @@ public class SeleniumTest {
 
         // Click Browse classes link
         driver.findElement(By.xpath("//*[@id=\"classSearchLink\"]/span")).click();
-
 
         //Clicking on dropdown
         driver.findElement(By.id("select2-chosen-1")).click();
@@ -273,7 +274,9 @@ public class SeleniumTest {
     public void scenarioFour() throws IOException, InterruptedException {
         System.out.println("Scenario 4: Add the items to your cart in the NU Bookstore");
         driver.get("https://northeastern.bncollege.com/");
-        driver.manage().window().fullscreen();
+        driver.manage().window().maximize();
+
+//        driver.manage().window().fullscreen();
         Thread.sleep(5000);
         getScreenShot("Scenario4/original shopping site");
         Thread.sleep(2000);
@@ -291,21 +294,17 @@ public class SeleniumTest {
         Thread.sleep(2000);
         getScreenShot("Scenario4/checkout");
 
+        driver.close();
         driver.quit();
-
-
     }
 
     @Test(priority = 5, description = "Scenario 5: Create a plan for course registration")
     public void scenarioFive() throws IOException, InterruptedException {
         System.out.println("five");
-        Properties properties = new Properties();
-        FileInputStream fileInputStream = new FileInputStream("/Users/bhavinbhatia/BB_Documents/Projects/selenium" +
-                "/intelij-selenium/untitled/target/generated-test-sources/test-annotations/testdata.properties");
-        properties.load(fileInputStream);
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30000));
         driver.get("https://about.me.northeastern.edu/home/");
+        driver.manage().window().maximize();
 
         //login to student Hub
         WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath
@@ -316,13 +315,12 @@ public class SeleniumTest {
         //Login Screen
         driver.findElement(By.xpath("//*[@id=\"bySelection\"]/div[2]/div/span")).click();
         driver.findElement(By.id("username")).sendKeys(properties.getProperty("username"));
-        driver.findElement(By.id("password")).sendKeys(properties.getProperty("password"));
+        String password = loginToApplication();
+        driver.findElement(By.id("password")).sendKeys(password);
         getScreenShot("Scenario5/login");
         Thread.sleep(5000);
         //Get screenshot of login screen
-
         driver.findElement(By.xpath("/html/body/section/div/div[1]/div/form/div[3]/button")).click();
-
 
         //Click on Yes
         driver.findElement(By.xpath("/html/body/div/form/div/div/div[2]/div[1]/div/div/div/div/div/div[3]/div/div[2]/div/div[3]/div[2]/div/div/div[2]/input")).click();
@@ -331,7 +329,6 @@ public class SeleniumTest {
         //click on Lets Go
         driver.findElement(By.xpath("/html/body/div[2]/div/div/div/div[2]/div[2]/button[2]/span/span/span")).click();
         Thread.sleep(2000);
-        driver.manage().window().fullscreen();
         driver.findElement(By.cssSelector("#spSiteHeader > div > div.headerRow-45 > div > div.adjacentTitleSubcell-54 > " +
                 "div > div > div > span:nth-child(4) > a")).click();
         getScreenShot("Scenario5/new one");
@@ -340,7 +337,6 @@ public class SeleniumTest {
         driver.findElement(By.xpath("//*[@id=\"7b3083e7-1956-4f64-968b-920d938ba636\"]/div/div/div/div[2]" +
                 "/div/div/div[1]/div/div[11]/div/div/a")).click();
 
-
         //Handeling Multiple windows
         Set<String> windowHandles = driver.getWindowHandles();
         Iterator<String> iterator = windowHandles.iterator();
@@ -348,21 +344,15 @@ public class SeleniumTest {
         String childWindow = iterator.next();
         driver.switchTo().window(childWindow);
 
-
         //new registration window
         getScreenShot("Scenario5/Registration_window");
         driver.findElement(By.id("planningLink")).click();
-
         driver.findElement(By.xpath("//*[@id=\"select2-chosen-1\"]")).click();
         driver.findElement(By.xpath("//*[@id=\"202330\"]")).click();
-
-
         driver.findElement(By.id("term-go")).click();
         driver.findElement(By.id("createPlan")).click();
         driver.findElement(By.xpath("//*[@id=\"s2id_txt_subject\"]")).click();
-
         driver.findElement(By.xpath("//*[@id=\"s2id_autogen1\"]")).sendKeys("Information Systems Program");
-
         driver.findElement(By.xpath("//*[@id=\"INFO\"]")).click();
         driver.findElement(By.id("search-go")).click();
         Thread.sleep(2000);
